@@ -57,71 +57,72 @@ void readLoRaResponse() {
     Serial.print("[RECEIVED] ");
     Serial.println(line);
 
-    // Extract only the payload; fall back to the whole line if format differs
-    String payload = extractPayload(line);
+    String payload = extractPayload(line);   // <-- only DATA field
     if (payload.length() == 0) {
       Serial.println("[PARSE] No payload found; LEDs unchanged.");
       continue;
     }
 
+    Serial.print("[PAYLOAD] ");
+    Serial.println(payload);
     handleMessage(payload);
   }
 }
 
-// --- Extract payload from lines like: +RCV=from,len,DATA,rssi,snr
+// --- Extract payload (3rd CSV field) after the '=' sign.
+// Works for +RCV=, +RCW=, +SCV=, +RECV=, etc., or bare payload lines.
 String extractPayload(const String& line) {
-  // Normal form
-  if (line.startsWith("+RCV=") || line.startsWith("+SCV=")) {
-    // Find commas
-    int c1 = line.indexOf(',');                 // after FROM
+  // If there's an '=', parse FROM,LEN,DATA,... after it
+  int eq = line.indexOf('=');
+  if (eq >= 0) {
+    // Substring after '='
+    String after = line.substring(eq + 1);  // "from,len,DATA,rssi,snr"
+    // Find commas to locate DATA (3rd field)
+    int c1 = after.indexOf(',');                // after FROM
     if (c1 < 0) return "";
-    int c2 = line.indexOf(',', c1 + 1);         // after LEN
+    int c2 = after.indexOf(',', c1 + 1);        // after LEN
     if (c2 < 0) return "";
-    int c3 = line.indexOf(',', c2 + 1);         // after DATA (could be -1 if missing)
+    int c3 = after.indexOf(',', c2 + 1);        // after DATA (may be -1)
 
     int start = c2 + 1;
-    int end   = (c3 >= 0) ? c3 : line.length();
+    int end   = (c3 >= 0) ? c3 : after.length();
     if (start >= end) return "";
 
-    String data = line.substring(start, end);
+    String data = after.substring(start, end);
     data.trim();
     return data;
   }
 
-  // Some firmwares output only the payload
-  return line;
+  // Otherwise assume the line itself IS the payload
+  String data = line;
+  data.trim();
+  return data;
 }
 
-// --- Determine which LED to light based on message content (payload only) ---
+// --- Determine which LEDs to light based on payload content ---
+// Multiple LEDs can be ON simultaneously (e.g., "BW" -> Blue + White)
 void handleMessage(String msg) {
   msg.toUpperCase();  // normalize
-
-  // Turn all off first
   allOff();
 
-  // Priority: R -> Y -> G -> B -> W (change order if you want different precedence)
-  if (msg.indexOf("R") >= 0) {
-    digitalWrite(LED_R, HIGH);
-    Serial.println("[LED] RED ON (payload contains R)");
-  }
-  else if (msg.indexOf("Y") >= 0) {
-    digitalWrite(LED_Y, HIGH);
-    Serial.println("[LED] YELLOW ON (payload contains Y)");
-  }
-  else if (msg.indexOf("G") >= 0) {
-    digitalWrite(LED_G, HIGH);
-    Serial.println("[LED] GREEN ON (payload contains G)");
-  }
-  else if (msg.indexOf("B") >= 0) {
-    digitalWrite(LED_B, HIGH);
-    Serial.println("[LED] BLUE ON (payload contains B)");
-  }
-  else if (msg.indexOf("W") >= 0) {
-    digitalWrite(LED_W, HIGH);
-    Serial.println("[LED] WHITE ON (payload contains W)");
-  }
-  else {
-    Serial.println("[LED] No R/Y/G/B/W found in payload — all OFF");
+  bool any = false;
+
+  if (msg.indexOf('R') >= 0) { digitalWrite(LED_R, HIGH); any = true; }
+  if (msg.indexOf('Y') >= 0) { digitalWrite(LED_Y, HIGH); any = true; }
+  if (msg.indexOf('G') >= 0) { digitalWrite(LED_G, HIGH); any = true; }
+  if (msg.indexOf('B') >= 0) { digitalWrite(LED_B, HIGH); any = true; }
+  if (msg.indexOf('W') >= 0) { digitalWrite(LED_W, HIGH); any = true; }
+
+  if (any) {
+    Serial.print("[LED] ON: ");
+    if (digitalRead(LED_R)) Serial.print("R ");
+    if (digitalRead(LED_Y)) Serial.print("Y ");
+    if (digitalRead(LED_G)) Serial.print("G ");
+    if (digitalRead(LED_B)) Serial.print("B ");
+    if (digitalRead(LED_W)) Serial.print("W ");
+    Serial.println();
+  } else {
+    Serial.println("[LED] No R/Y/G/B/W in payload — all OFF");
   }
 }
 

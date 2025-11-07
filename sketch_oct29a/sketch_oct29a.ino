@@ -1,6 +1,17 @@
 #include <SoftwareSerial.h>
 SoftwareSerial lora(10, 11); // RX, TX
 
+// Optional: quick helper to build the correct AT+SEND with length = payload size
+void sendPayload(uint8_t destAddr, const String& payload) {
+  String cmd = "AT+SEND=";
+  cmd += String(destAddr);
+  cmd += ",";
+  cmd += String(payload.length());   // length must match payload bytes
+  cmd += ",";
+  cmd += payload;
+  sendCommand(cmd);
+}
+
 void setup() {
   Serial.begin(115200);       // For your Serial Monitor
   lora.begin(115200);         // Match this baud to the module
@@ -25,23 +36,34 @@ void setup() {
   sendCommand("AT+NETWORKID?");
   sendCommand("AT+BAND?");
 
-  Serial.println("[INFO] Transmitter ready. Sending test messages every 3 seconds...");
+  Serial.println("[INFO] Transmitter ready. Sending test messages...");
   delay(1000);
 }
 
 void loop() {
-  // Try sending a test packet to receiver at address 2
-  // sendCommand("AT+SEND=2,5,HELLO");
-  // delay(3000);  // Wait before next send
+  // Destination is your receiver at address 2
+  const uint8_t DEST = 2;
 
-  sendCommand("AT+SEND=2,1,G");  // send single-character 'G'
-  delay(2000);
+  // Single-LED tests (R=pin6, Y=5, G=4, B=3, W=2 on the receiver)
+  sendPayload(DEST, "R"); delay(1500);
+  sendPayload(DEST, "Y"); delay(1500);
+  sendPayload(DEST, "G"); delay(1500);
+  sendPayload(DEST, "B"); delay(1500);
+  sendPayload(DEST, "W"); delay(1500);
 
-  sendCommand("AT+SEND=2,1,Y");  // send 'Y'
-  delay(2000);
+  // Multi-LED combos (turn on multiple LEDs simultaneously on the receiver)
+  sendPayload(DEST, "RY");    delay(1500);  // Red + Yellow
+  sendPayload(DEST, "GW");    delay(1500);  // Green + White
+  sendPayload(DEST, "BW");    delay(1500);  // Blue + White
+  sendPayload(DEST, "RGB");   delay(1500);  // Red + Green + Blue
+  sendPayload(DEST, "RYG");   delay(1500);  // Red + Yellow + Green
+  sendPayload(DEST, "YBW");   delay(1500);  // Yellow + Blue + White
+  sendPayload(DEST, "RYGBW"); delay(2000);  // All five on
 
-  sendCommand("AT+SEND=2,1,B");  // send 'B'
-  delay(2000);
+  // Optional clear between patterns
+  sendPayload(DEST, "");      delay(1000);  // If receiver treats empty as "no match", LEDs go off
+  // Or explicitly send a non-matching token if you prefer:
+  // sendPayload(DEST, "CLEAR"); delay(1000);
 }
 
 // --- Utility functions ---

@@ -1,6 +1,7 @@
 #include <SoftwareSerial.h>
 SoftwareSerial lora(10, 11); // RX, TX
 
+
 void setup() {
   Serial.begin(115200);
   lora.begin(115200);

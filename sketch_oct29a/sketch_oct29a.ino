@@ -31,8 +31,17 @@ void setup() {
 
 void loop() {
   // Try sending a test packet to receiver at address 2
-  sendCommand("AT+SEND=2,5,HELLO");
-  delay(3000);  // Wait before next send
+  // sendCommand("AT+SEND=2,5,HELLO");
+  // delay(3000);  // Wait before next send
+
+  sendCommand("AT+SEND=2,1,G");  // send single-character 'G'
+  delay(2000);
+
+  sendCommand("AT+SEND=2,1,Y");  // send 'Y'
+  delay(2000);
+
+  sendCommand("AT+SEND=2,1,B");  // send 'B'
+  delay(2000);
 }
 
 // --- Utility functions ---

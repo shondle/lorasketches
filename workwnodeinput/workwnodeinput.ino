@@ -8,7 +8,7 @@ const int DRIVE_PINS[N_SENSORS] = {2,  3,  4,  5,  6 };   // excite each sensor 
 const char LETTERS[N_SENSORS]   = {'W','B','Y','G','R'};  // 1→W, 2→B, 3→Y, 4→G, 5→R
 
 const int N_SAMPLES = 8;
-int THRESHOLD = 10;  // start low; tune after first tests
+int THRESHOLD = 900;  // start low; tune after first tests
 
 // ----- LoRa dest -----
 const uint8_t DEST_ADDR = 2;
